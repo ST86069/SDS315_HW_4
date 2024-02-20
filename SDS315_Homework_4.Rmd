@@ -1,0 +1,290 @@
+---
+title: "Homework 4"
+author: "Shreyasi Tamhane"
+date: "2024-02-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, results = 'hide', echo = FALSE, warning=FALSE, message=FALSE}
+# import libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(mosaic)
+
+# import datasets
+gas_prices <- read.csv("gasprices.csv")
+s_class <- read.csv("sclass.csv")
+nbc_pilot_survey <- read.csv("nbc_pilotsurvey.csv")
+ebay <- read.csv("ebay.csv")
+```
+
+### Problem 1
+
+#### Theory A
+
+Claim: Gas stations charge more if they lack direct competition in sight.
+
+Evidence: The difference of means for these data is -0.023, around 2 cents. After computing the 95% confidence interval of the difference in means of gas station prices based on if they are near competition or not, (-0.054, 0.008), we find that it does contain zero. From the confidence interval we can see the gas station price versus direct competition have a difference in means that ranges from around -6 cents to 1 cent.
+
+Conclusion: Thus, the difference in gas station prices based on whether or not there is direct competition in sight is statistically insignificant at the 5% level, because a 95% confidence interval for the difference contains zero (0 cents, when using units). The evidence doesn't support the claim that gas stations charge higher if there aren't any competitors near. 
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+mean(Price ~ Competitors, data=gas_prices)
+diffmean(Price ~ Competitors, data=gas_prices)
+
+boot_gas_price_competitors <- do(10000)*diffmean(Price ~ Competitors, data=resample(gas_prices))
+
+ggplot(boot_gas_price_competitors) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_gas_price_competitors, level = 0.95)
+```
+
+#### Theory B
+
+Claim: The richer the area, the higher the gas prices.
+
+Evidence: The confidence integral of the regression model of gas station prices and the income of households around the gas stations is (6.65e-07, 1.78e-06), and does not contain zero. The slope of the regression model of the data is 1.25e-06, so for every $10,000 increase in income, the gas station prices go up around 0.0125 cents. 
+
+Conclusion: Thus, the data does show that the relationship between gas station prices and the income of households in the gas stations' zip codes is statistically significant at the 5% interval, as the 95% confidence interval does not contain zero. However, when observing the slope of the regression model, 1.25e-06, the claim doesn't seem to be practically significant. As stated above, a $10,000 increase in income doesn't yield a very significant change in gas station prices. While the evidence does support the claim that the richer the area, the higher the gas prices, the association between these two variables fails to be practically significant. 
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+
+mean(Price ~ Income, data=gas_prices)
+lm_price_income <- lm(Price ~ Income, data=gas_prices)
+
+coef(lm_price_income)
+
+boot_rich_area <- do(10000)*lm(Price ~ Income, data=resample(gas_prices))
+
+ggplot(gas_prices) + 
+  geom_point(aes(x=Income, y=Price)) + 
+  geom_smooth(aes(x=Income, y=Price), method='lm')
+
+confint(boot_rich_area, level = 0.95) %>%
+  filter(name == "Income")
+
+10000*.00000125
+```
+
+
+#### Theory C
+
+Claim: Gas stations at stoplights charge more.
+
+Evidence: The difference of means for these data is -0.003, around 0.3 cents. After computing the 95% confidence interval of the difference in means of gas station prices based on if they are at stoplights or not, (-0.0385, 0.0316), we find that it does contain zero. From the 95% confidence interval we can see the gas station price versus if they are at stoplights or not have a difference in means that ranges from around -4 cents to 3 cents.
+
+Conclusion: Thus, the difference in gas station prices based on whether or not they are at stoplights is statistically insignificant at the 5% level, because a 95% confidence interval for the difference contains zero (0 cents, when using units). The evidence doesn't support the claim that gas stations charge higher if they are at stoplights.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+mean(Price ~ Stoplight, data=gas_prices)
+diffmean(Price ~ Stoplight, data=gas_prices)
+
+boot_gas_price_stoplight <- do(10000)*diffmean(Price ~ Stoplight, data=resample(gas_prices))
+
+ggplot(boot_gas_price_stoplight) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_gas_price_stoplight, level = 0.95)
+
+```
+
+#### Theory D
+
+Claim: Gas stations with direct highway access charge more.
+
+Evidence: The difference of means for these data is 0.046, around 5 cents. After computing the 95% confidence interval of the difference in means of gas station prices based on if they have direct highway access or not, (0.010, 0.081), we find that it does not contain zero. From the 95% confidence interval we can see the gas station price versus if they have direct highway access or not have a difference in means that ranges from around 1 cent to 8 cents.
+
+Conclusion: Thus, the difference in gas station prices based on whether or not they have direct highway access is statistically significant at the 5% level, because a 95% confidence interval for the difference doesn't contain zero (0 cents, when using units). Practically speaking, the difference between the means for gas stations with direct highway access, as opposed to those without direct highway access, is not very significant, as there is only around a 5 cent difference. However, the evidence presented by the data does support the claim that gas stations charge higher if they have direct highway access.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+mean(Price ~ Highway, data=gas_prices)
+diffmean(Price ~ Highway, data=gas_prices)
+
+boot_gas_price_highway <- do(10000)*diffmean(Price ~ Highway, data=resample(gas_prices))
+
+ggplot(boot_gas_price_highway) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_gas_price_highway, level = 0.95)
+
+```
+
+#### Theory E
+
+Claim: Shell charges more than all other non-Shell brands.
+
+Evidence: The difference of means for these data is 0.027, around 3 cents. After computing the 95% confidence interval of the difference in means of Shell gas station prices as opposed to non-Shell gas station prices, (-0.054, 0.065), we find that it does contain zero. From the confidence interval we can see that the Shell gas station prices versus the non-Shell gas station prices have a difference in means that ranges from around -6 cents to 7 cents.
+
+Conclusion: Thus, the difference in gas station prices based on whether they are a Shell gas station or not is statistically insignificant at the 5% level, because a 95% confidence interval for the difference contains zero (0 cents, when using units). The evidence doesn't support the claim that Shell charges more than all other non-Shell brands.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+gas_prices_shell = gas_prices %>%
+  mutate(Shell_or_Not = ifelse(Brand == "Shell", yes=TRUE, no=FALSE))
+
+mean(Price ~ Shell_or_Not, data=gas_prices_shell)
+diffmean(Price ~ Shell_or_Not, data=gas_prices_shell)
+
+boot_gas_price_shell <- do(10000)*diffmean(Price ~ Shell_or_Not, data=resample(gas_prices_shell))
+
+ggplot(boot_gas_price_shell) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_gas_price_shell, level = 0.95)
+```
+
+### Problem 2
+
+#### Part A
+
+The 95% confidence interval for the average mileage of 2011 S-Class 63 AMGs that were on the used-car market is (26242.66, 31758.75). In other words the average mileage of these specific cars ranges from 26242.66 miles per gallon to 31758.75 miles per gallon.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+s_class_2011 = s_class %>%
+  filter(year == 2011 & trim == "63 AMG")
+
+mean(~mileage, data=s_class_2011)
+
+boot_s_class_2011 <- do(10000)*mean(~mileage, data=resample(s_class_2011))
+
+ggplot(boot_s_class_2011) + 
+  geom_histogram(aes(x=mean))
+
+confint(boot_s_class_2011, level = 0.95)
+```
+
+#### Part B
+
+The 95% confidence interval for the proportion of all 2014 S-Class 550s that were painted black is (0.417, 0.453). In other words the proportion of these specific cars that are painted black ranges from 41.7% to 45.3%.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+s_class_2014 = s_class %>%
+  mutate(is_black = ifelse(color == "Black", yes=TRUE, no=FALSE)) %>%
+  filter(year == 2014 & trim == "550")
+
+prop(~is_black, data=s_class_2014)
+
+boot_s_class_2014 <- do(10000)*prop(~is_black, data=resample(s_class_2014))
+
+ggplot(boot_s_class_2014) + 
+  geom_histogram(aes(x=prop_TRUE))
+
+confint(boot_s_class_2014, level = 0.95)
+```
+
+### Problem 3
+
+#### Part A
+
+Question: Is there evidence that one show, either "Living with Ed" or "My Name is Earl", consistently produces a higher mean Q1_Happy response among viewers?
+
+Approach: To approach this question, I am using a 95% confidence interval of the difference of means between the viewer response to the Q1_Happy question for the shows "Living with Ed" and "My Name is Earl".
+
+Results: The difference of means for this data is -0.149, around -14.9%. I got a 95% confidence interval of (-0.396, 0.100), indicating that the difference of means between the viewer response to the Q1_Happy question for the shows "Living with Ed" and "My Name is Earl" ranges from -39.6% to 100%. Additionally, the best estimate is that there is a 14.9% difference in the viewer response to the Q1_Happy question. 
+
+Conclusion: However, as this confidence interval does contain zero, we can say that the difference in means is statistically insignificant at the 5% level. The results do not provide sufficient evidence that either show, "Living with Ed" or "My Name is Earl", consistently produces a higher mean Q1_Happy response among viewers.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+nbc_earl_ed = nbc_pilot_survey %>%
+  filter(Show == "Living with Ed" | Show == "My Name is Earl") 
+
+mean(Q1_Happy ~ Show, data=nbc_earl_ed)
+diffmean(Q1_Happy ~ Show, data=nbc_earl_ed)
+
+boot_nbc_earl_ed <- do(10000)*diffmean(Q1_Happy ~ Show, data=resample(nbc_earl_ed))
+
+ggplot(boot_nbc_earl_ed) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_nbc_earl_ed, level = 0.95)
+```
+
+#### Part B
+
+Question: Is there evidence that one show, either "The Biggest Loser" or "The Apprentice: Los Angeles", consistently produces a higher mean Q1_Annoyed response among viewers?
+
+Approach: To approach this question, I am using a 95% confidence interval of the difference of means between the viewer response to the Q1_Annoyed question for the shows "The Biggest Loser" and "The Apprentice: Los Angeles".
+
+Results: The difference of means for this data is -0.271, around -27.1%. I got a 95% confidence interval of (-0.524, -0.017), indicating that the difference of means between the viewer response to the Q1_Annoyed question for the shows "The Biggest Loser" and "The Apprentice: Los Angeles" ranges from -52.4% to 1.7%. Additionally, the best estimate is that there is a -27.1% difference in the viewer response to the Q1_Annoyed question. 
+
+Conclusion: As this confidence interval does not contain zero, we can say that the difference in means is statistically significant at the 5% level. When observing the means of the shows, "The Apprentice: Los Angeles" had around a 0.271, higher mean (2.307) than The Biggest Loser (2.036). Practically speaking, an approximate -27.1% difference in the viewer response is quite a large difference. The results do provide sufficient evidence that the show, "The Apprentice: Los Angeles", does consistently produce a higher mean Q1_Annoyed response among viewers.
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+nbc_loser_apprentice = nbc_pilot_survey %>%
+  filter(Show == "The Biggest Loser" | Show == "The Apprentice: Los Angeles") 
+
+mean(Q1_Annoyed ~ Show, data=nbc_loser_apprentice)
+diffmean(Q1_Annoyed ~ Show, data=nbc_loser_apprentice)
+
+boot_nbc_loser_apprentice <- do(10000)*diffmean(Q1_Annoyed ~ Show, data=resample(nbc_loser_apprentice))
+
+ggplot(boot_nbc_loser_apprentice) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_nbc_loser_apprentice, level = 0.95)
+```
+
+#### Part C
+
+Question: What proportion of American TV watchers would we expect to give a response of 4 or greater to the Q2_Confusing question for the show "Dancing with the Stars"?
+
+Approach: To approach this question, I am using a 95% confidence interval of the proportion of American TV watchers that would we expect to give a response of 4 or greater to the Q2_Confusing question for the show "Dancing with the Stars".
+
+Results: The proportion for this data is 0.077, around 7.7%. I got a 95% confidence interval of (0.039, 0.116), indicating that the proportion of American TV watchers that would we expect to give a response of 4 or greater to the Q2_Confusing question for the show "Dancing with the Stars" ranges from 3.9% to 11.6%. Additionally, the best estimate is that there is a 7.7% proportion in a viewer response of 4 or greater to the Q2_Confusing question.
+
+Conclusion: As this confidence interval does not contain zero, we can say that the proportion is statistically significant at the 5% level. Based on the evidence from the results, the best estimate is that around 7.7% of the proportion of American TV watchers would give a response of 4 or greater to the Q2_Confusing question for the show "Dancing with the Stars". 
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+nbc_dancing = nbc_pilot_survey %>%
+  mutate(is_greater_than_4 = ifelse(Q2_Confusing >= 4, yes=TRUE, no=FALSE)) %>%
+  filter(Show == "Dancing with the Stars") 
+
+prop(~is_greater_than_4, data=nbc_dancing)
+
+boot_nbc_dancing <- do(10000)*prop(~is_greater_than_4, data=resample(nbc_dancing))
+
+ggplot(boot_nbc_dancing) + 
+  geom_histogram(aes(x=prop_TRUE))
+
+confint(boot_nbc_dancing, level = 0.95)
+```
+
+### Problem 4
+
+Question: Is there evidence whether the revenue ratio is the same in the treatment and control DMA groups, or whether instead the data favors the idea that paid search advertising on Google creates extra revenue for EBay.
+
+Approach: To approach this question, I am using a 95% confidence interval of the difference of means between the revenue ratio of the treatment DMA group and the revenue ratio of the control DMA group.
+
+Results: The difference of means for this data is -0.052, around -5.2%. I got a 95% confidence interval of (-0.091, -0.013), indicating that the difference of means between the revenue ratio of the treatment DMA group and the revenue ratio of the control DMA group ranges from -9.1% to -1.3%. Additionally, the best estimate is that there is a -5.2% difference in the revenue ratios of each DMA group. 
+
+Conclusion: As this confidence interval does not contain zero, we can say that the difference in means is statistically significant at the 5% level. When observing the means of the revenue ratios of the two groups, I observed that the control group had around a 0.052 higher revenue ratio than the treatment group. Additionally, the best estimate is that the difference in means of the revenue ratios is around 5.2%. Practically speaking, a 5.2% estimate is not large, so while Ebay may be profiting from the paid search advertising, it may not be as large of a difference. However, solely based on statistical evidence presented above, paid search advertising on Google creates extra revenue for EBay. 
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+ebay_treatment = ebay %>%
+  mutate(treatment_group = ifelse(adwords_pause == 1, yes=TRUE, no=FALSE)) 
+
+mean(rev_ratio ~ treatment_group, data=ebay_treatment)
+diffmean(rev_ratio ~ treatment_group, data=ebay_treatment)
+
+boot_ebay_treatment <- do(10000)*diffmean(rev_ratio ~ treatment_group, data=resample(ebay_treatment))
+
+ggplot(boot_ebay_treatment) + 
+  geom_histogram(aes(x=diffmean))
+
+confint(boot_ebay_treatment, level = 0.95)
+```
+
+
+
+
+
+
+
+
+
+
